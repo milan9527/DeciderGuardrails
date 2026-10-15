@@ -1,0 +1,10 @@
+FROM python:3.12-slim
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
+WORKDIR /app
+COPY pyproject.toml ./
+COPY guardrails_bench ./guardrails_bench
+COPY demo_api ./demo_api
+RUN pip install '.[demo]' && useradd --uid 10001 --create-home app
+USER 10001
+EXPOSE 8000
+CMD ["python", "-m", "demo_api"]

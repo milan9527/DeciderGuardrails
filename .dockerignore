@@ -1,0 +1,9 @@
+**
+!pyproject.toml
+!Dockerfile.backend
+!guardrails_bench/
+!guardrails_bench/**
+!demo_api/
+!demo_api/**
+**/__pycache__/
+**/*.pyc

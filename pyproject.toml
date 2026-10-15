@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "decider-guardrails-bench"
+version = "0.1.0"
+description = "Reproducible bilingual guardrail evaluation for Strands Decider"
+requires-python = ">=3.10"
+dependencies = ["httpx>=0.27,<1"]
+
+[project.optional-dependencies]
+bedrock = ["boto3>=1.35,<2"]
+test = ["pytest>=8,<10", "fastapi>=0.115,<1"]
+demo = ["fastapi>=0.115,<1", "uvicorn[standard]>=0.30,<1"]
+
+[project.scripts]
+guardrails-bench = "guardrails_bench.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["guardrails_bench*", "demo_api*"]
+
+[tool.setuptools.package-data]
+guardrails_bench = ["assets/*.json", "assets/*.jsonl"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

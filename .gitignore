@@ -1,0 +1,17 @@
+DeciderKey.txt
+.env
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+results/
+dist/
+build/
+node_modules/
+.env.*
+!.env.example
+.deployment/
+frontend/playwright-report/
+frontend/test-results/
+*.tsbuildinfo

@@ -1,0 +1,43 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Decider Guardrails: private container registry and runtime credentials",
+  "Resources": {
+    "Repository": {
+      "Type": "AWS::ECR::Repository",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "ImageTagMutability": "IMMUTABLE",
+        "ImageScanningConfiguration": { "ScanOnPush": true },
+        "EncryptionConfiguration": { "EncryptionType": "AES256" },
+        "LifecyclePolicy": {
+          "LifecyclePolicyText": "{\"rules\":[{\"rulePriority\":1,\"description\":\"Keep latest ten images\",\"selection\":{\"tagStatus\":\"any\",\"countType\":\"imageCountMoreThan\",\"countNumber\":10},\"action\":{\"type\":\"expire\"}}]}"
+        }
+      }
+    },
+    "DeciderSecret": {
+      "Type": "AWS::SecretsManager::Secret",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "Description": "Decider API key. Populated by deploy.py before ECS starts.",
+        "GenerateSecretString": { "PasswordLength": 48, "ExcludePunctuation": true }
+      }
+    },
+    "DemoSecret": {
+      "Type": "AWS::SecretsManager::Secret",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "Description": "Demo username and scrypt password hash. Populated by deploy.py.",
+        "GenerateSecretString": { "PasswordLength": 40, "ExcludePunctuation": true }
+      }
+    }
+  },
+  "Outputs": {
+    "RepositoryUri": { "Value": { "Fn::GetAtt": ["Repository", "RepositoryUri"] } },
+    "RepositoryName": { "Value": { "Ref": "Repository" } },
+    "DeciderSecretArn": { "Value": { "Ref": "DeciderSecret" } },
+    "DemoSecretArn": { "Value": { "Ref": "DemoSecret" } }
+  }
+}
