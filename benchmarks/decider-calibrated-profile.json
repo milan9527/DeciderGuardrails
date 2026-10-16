@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "frozen_at": "2026-10-16T01:13:22.130148+00:00",
+  "prompt_version": "focused-v1",
+  "policy_sha256": "d488146e33790f73b86ab9f00473bdf000bdfde37abdc47c1b4edcc7f6287875",
+  "dev_sha256": "cda38ed095608221141618e86b0e5da0d7229f4f47e59487ba64c94ff7a56a59",
+  "selected": "calibrated",
+  "thresholds": {
+    "hate": 0.8,
+    "insults": 0.8,
+    "sexual": 0.8,
+    "violence": 0.85,
+    "misconduct": 0.9,
+    "self_harm": 0.85,
+    "prompt_attack": 0.75,
+    "pii": 0.85,
+    "denied_topics": 0.65,
+    "grounding": 0.35,
+    "relevance": 0.5
+  },
+  "error_action": "block",
+  "literal_terms": [
+    "PROJECT_ORCHID",
+    "绝密代号"
+  ]
+}

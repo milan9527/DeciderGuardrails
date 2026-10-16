@@ -53,8 +53,11 @@ class DeciderProvider:
             follow_redirects=False, transport=transport,
         )
 
+    def request_for(self, case: Case) -> dict:
+        return build_request(case, self.policy, self.mode)
+
     async def evaluate(self, case: Case) -> Result:
-        request = build_request(case, self.policy, self.mode)
+        request = self.request_for(case)
         started = time.perf_counter()
         status, error, raw = None, None, None
         for attempt in range(1, self.retries + 2):
@@ -99,11 +102,13 @@ class BedrockProvider:
     mode = "managed"
 
     def __init__(self, guardrail_id: str, version: str, region: str,
-                 concurrency: int = 4, timeout: float = 30, retries: int = 0):
+                 concurrency: int = 4, timeout: float = 30, retries: int = 0,
+                 routes: dict | None = None):
         import boto3
         from botocore.config import Config
 
         self.guardrail_id, self.version = guardrail_id, version
+        self.routes = routes
         self.client = boto3.client(
             "bedrock-runtime", region_name=region,
             config=Config(
@@ -113,24 +118,42 @@ class BedrockProvider:
             ),
         )
 
+    def request_for(self, case: Case) -> dict:
+        has_reference = case.source == "OUTPUT" and bool(case.reference)
+        has_query = case.source == "OUTPUT" and bool(case.query)
+        route_name = ("both" if has_reference and has_query else
+                      "grounding" if has_reference else "relevance" if has_query else "base")
+        routes = getattr(self, "routes", None)
+        route = routes[route_name] if routes else {
+            "guardrail_id": self.guardrail_id, "version": self.version,
+        }
+        reference, query = case.reference if has_reference else None, case.query if has_query else None
+        if routes and route_name != "base":
+            # ApplyGuardrail requires all three roles even with only one contextual
+            # filter enabled. The routed guardrail enables ONLY the applicable check.
+            # These neutral placeholders are excluded from all other filters.
+            reference = reference or "No reference is supplied. Only evaluate relevance to the query."
+            query = query or "Summarize the information in the reference."
+        content = []
+        if reference:
+            content.append({"text": {"text": reference, "qualifiers": ["grounding_source"]}})
+        if query:
+            content.append({"text": {"text": query, "qualifiers": ["query"]}})
+        candidate = {
+            "text": (case.background + "\n" if case.background is not None else "") + case.content,
+            "qualifiers": ["guard_content"],
+        }
+        content.append({"text": candidate})
+        return {
+            "guardrailIdentifier": route["guardrail_id"], "guardrailVersion": route["version"],
+            "source": case.source, "content": content, "outputScope": "FULL",
+        }
+
     def _evaluate(self, case: Case) -> Result:
         started = time.perf_counter()
-        content = []
-        if case.source == "OUTPUT" and case.reference:
-            content.append({"text": {"text": case.reference, "qualifiers": ["grounding_source"]}})
-        if case.source == "OUTPUT" and case.query:
-            content.append({"text": {"text": case.query, "qualifiers": ["query"]}})
-        candidate = {
-            "text": (case.background + "\n" if case.background is not None else "") + case.content
-        }
-        if len(content):
-            candidate["qualifiers"] = ["guard_content"]
-        content.append({"text": candidate})
         try:
-            raw = self.client.apply_guardrail(
-                guardrailIdentifier=self.guardrail_id, guardrailVersion=self.version,
-                source=case.source, content=content, outputScope="FULL",
-            )
+            request = self.request_for(case)
+            raw = self.client.apply_guardrail(**request)
             action = raw.get("action")
             if action not in {"NONE", "GUARDRAIL_INTERVENED"}:
                 raise ValueError("Unknown Bedrock guardrail action")
@@ -141,7 +164,7 @@ class BedrockProvider:
                 attempts=metadata.get("RetryAttempts", 0) + 1,
                 status_code=metadata.get("HTTPStatusCode"),
                 score=float(action == "GUARDRAIL_INTERVENED"),
-                model=f"bedrock-guardrail:{self.guardrail_id}:{self.version}",
+                model=f"bedrock-guardrail:{request['guardrailIdentifier']}:{request['guardrailVersion']}",
                 usage=raw.get("usage", {}),
                 raw={k: v for k, v in raw.items() if k != "ResponseMetadata"},
             )

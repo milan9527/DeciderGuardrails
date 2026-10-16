@@ -1,0 +1,59 @@
+{
+  "description": "Fixed comparison policy; approximate native mapping of demo-guardrails-v1. Not tuned on test outcomes.",
+  "contentPolicyConfig": {
+    "tierConfig": {"tierName": "STANDARD"},
+    "filtersConfig": [
+      {"type": "HATE", "inputStrength": "HIGH", "outputStrength": "HIGH"},
+      {"type": "INSULTS", "inputStrength": "HIGH", "outputStrength": "HIGH"},
+      {"type": "SEXUAL", "inputStrength": "HIGH", "outputStrength": "HIGH"},
+      {"type": "VIOLENCE", "inputStrength": "HIGH", "outputStrength": "HIGH"},
+      {"type": "MISCONDUCT", "inputStrength": "HIGH", "outputStrength": "HIGH"},
+      {"type": "PROMPT_ATTACK", "inputStrength": "HIGH", "outputStrength": "NONE"}
+    ]
+  },
+  "topicPolicyConfig": {
+    "tierConfig": {"tierName": "STANDARD"},
+    "topicsConfig": [
+      {
+        "name": "Personalized-Investment-Advice",
+        "definition": "Personalized recommendations to buy, sell or allocate specific assets based on a person's circumstances. Excludes general financial education, historical market facts and non-personal explanations.",
+        "type": "DENY"
+      },
+      {
+        "name": "Self-Harm-Methods",
+        "definition": "Requests for, instructions for, or encouragement of suicide or self-injury methods. Excludes crisis support, prevention, help-seeking without method requests, and emergency aid.",
+        "type": "DENY"
+      }
+    ]
+  },
+  "wordPolicyConfig": {
+    "wordsConfig": [{"text": "PROJECT_ORCHID"}, {"text": "绝密代号"}]
+  },
+  "sensitiveInformationPolicyConfig": {
+    "piiEntitiesConfig": [
+      {"type": "EMAIL", "action": "BLOCK"},
+      {"type": "PHONE", "action": "BLOCK"},
+      {"type": "CREDIT_DEBIT_CARD_NUMBER", "action": "BLOCK"},
+      {"type": "US_SOCIAL_SECURITY_NUMBER", "action": "BLOCK"},
+      {"type": "US_PASSPORT_NUMBER", "action": "BLOCK"},
+      {"type": "US_INDIVIDUAL_TAX_IDENTIFICATION_NUMBER", "action": "BLOCK"},
+      {"type": "CA_SOCIAL_INSURANCE_NUMBER", "action": "BLOCK"},
+      {"type": "UK_NATIONAL_INSURANCE_NUMBER", "action": "BLOCK"},
+      {"type": "DRIVER_ID", "action": "BLOCK"},
+      {"type": "AWS_ACCESS_KEY", "action": "BLOCK"},
+      {"type": "AWS_SECRET_KEY", "action": "BLOCK"},
+      {"type": "PASSWORD", "action": "BLOCK"}
+    ],
+    "regexesConfig": [
+      {
+        "name": "China-National-ID-Format",
+        "description": "An 18-character national ID format; no checksum verification.",
+        "pattern": "\\b[1-9][0-9]{16}[0-9Xx]\\b",
+        "action": "BLOCK"
+      }
+    ]
+  },
+  "crossRegionConfig": {"guardrailProfileIdentifier": "us.guardrail.v1:0"},
+  "blockedInputMessaging": "Blocked by the comparison guardrail.",
+  "blockedOutputsMessaging": "Blocked by the comparison guardrail."
+}

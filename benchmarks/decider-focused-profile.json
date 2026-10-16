@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "frozen_at": "2026-10-16T01:13:22.130148+00:00",
+  "prompt_version": "focused-v1",
+  "policy_sha256": "d488146e33790f73b86ab9f00473bdf000bdfde37abdc47c1b4edcc7f6287875",
+  "dev_sha256": "cda38ed095608221141618e86b0e5da0d7229f4f47e59487ba64c94ff7a56a59",
+  "selected": "focused",
+  "thresholds": {
+    "hate": 0.5,
+    "insults": 0.5,
+    "sexual": 0.5,
+    "violence": 0.5,
+    "misconduct": 0.5,
+    "self_harm": 0.5,
+    "prompt_attack": 0.5,
+    "pii": 0.5,
+    "denied_topics": 0.5,
+    "grounding": 0.5,
+    "relevance": 0.5
+  },
+  "error_action": "block",
+  "literal_terms": [
+    "PROJECT_ORCHID",
+    "绝密代号"
+  ],
+  "selection_note": "Predefined 0.5 ablation; recall-oriented option after validation review. This is not the dev-selected calibrated profile."
+}

@@ -4,7 +4,7 @@
 
 **当前固定模板下，拆分检查提高了拦截效果，但增加了显著延迟。结果不足以支持将这套配置直接作为 Bedrock Guardrails 的完整替代。** 同时，开发集诊断显示提问格式能显著影响 grounding 结果，不能把单一模板的表现当作模型能力上限。
 
-此次没有配置真实 Bedrock Guardrail，因此没有 Bedrock 的实测数据；程序已提供相同数据上的 `ApplyGuardrail` 对比接口。
+本页保留首次 Decider 单独评测的数据。后续已完成真实 Bedrock Guardrails 对照，见 [BEDROCK_COMPARISON.md](BEDROCK_COMPARISON.md)。
 
 ## 效果：120 条保留测试
 
@@ -89,6 +89,10 @@
 [诊断的完整请求与响应](results/grounding-contract-probe.json) ·
 [可复现脚本](scripts/probe_grounding.py)
 
+## 后续优化
+
+2026-10-16 已完成禁词规则、grounding/PII 问法与逐项阈值实验。旧回归和新增合成验证均看到准确率、召回率改善，同时发现误拦截增加及小开发集阈值过拟合。完整过程、消融结果、冻结配置和使用方法见 [OPTIMIZATION.md](OPTIMIZATION.md)。本页历史基线数字保持不变。
+
 ## 复现与下一步
 
 ```bash
@@ -100,4 +104,4 @@ python -m scripts.probe_grounding
 
 建议先把 Decider 用于可度量的语义分类和分流，并针对检查类型设计明确的问法；字面禁词和确定性实体规则使用专门检测。再用真实业务分布测误报漏报，并使用相同测试数据与实际 Bedrock Guardrail 配置做对照。
 
-本结论针对当前返回的 v19 部署、固定策略和提问模板。没有测量其他 Decider 权重、GPU 利用率、服务端缓存命中、调用价格或真实 Bedrock 性能。
+本页结论针对 v19 部署、固定策略和提问模板。首次运行未测量其他 Decider 权重、GPU 利用率、服务端缓存命中、调用价格或 Bedrock 性能；后续 Bedrock 实测单列于对照报告。

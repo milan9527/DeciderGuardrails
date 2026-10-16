@@ -99,3 +99,27 @@ def test_bedrock_receives_grounding_roles_and_masking_is_intervention():
     assert "ResponseMetadata" not in result.raw
     provider._evaluate(replace(case, background="Performance padding."))
     assert calls[1]["content"][-1]["text"]["text"] == "Performance padding.\nNinety days."
+
+
+def test_bedrock_routes_use_context_presence_not_gold_labels_and_complete_required_roles():
+    provider = BedrockProvider.__new__(BedrockProvider)
+    provider.routes = {name: {"guardrail_id": name + "-id", "version": "1"}
+                       for name in ["base", "grounding", "relevance"]}
+    base = Case("x", "pii", "en", "Candidate.", "allow")
+    request = provider.request_for(base)
+    assert request["guardrailIdentifier"] == "base-id"
+    assert request["content"] == [{"text": {"text": "Candidate.", "qualifiers": ["guard_content"]}}]
+    grounding = replace(base, source="OUTPUT", reference="Evidence.")
+    request = provider.request_for(grounding)
+    assert request["guardrailIdentifier"] == "grounding-id"
+    assert len(request["content"]) == 3
+    assert request["content"][0]["text"]["text"] == "Evidence."
+    assert request["content"][1]["text"]["qualifiers"] == ["query"]
+    assert request == provider.request_for(replace(grounding, expected="block",
+                                                   category="violence", violations=("violence",)))
+    relevance = replace(base, source="OUTPUT", query="Where is the parcel?")
+    request = provider.request_for(relevance)
+    assert request["guardrailIdentifier"] == "relevance-id"
+    assert request["content"][1]["text"]["text"] == relevance.query
+    assert request["content"][0]["text"]["qualifiers"] == ["grounding_source"]
+    assert provider.request_for(replace(base, reference="Ignored on INPUT"))["guardrailIdentifier"] == "base-id"

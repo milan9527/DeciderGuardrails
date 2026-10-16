@@ -6,6 +6,8 @@
 
 已经完成的远程运行结果与解释见 [RESULTS.md](RESULTS.md)。
 
+2026-10-16 优化实测：精确禁词＋改写问法、阈值 0.5，在旧 120 条回归上准确率 **80.8% → 89.2%**、召回率 **77.4% → 96.8%**；新增 96 条合成验证上分别为 **88.5% → 92.7%**、**83.3% → 93.8%**，但误拦截略增。另提供误拦截较少的“仅禁词规则”配置。逐项阈值在小开发集上出现过拟合，保留实验记录。[优化过程、取舍与使用方法](OPTIMIZATION.md)。
+
 ## 前后端演示
 
 已提供 React 演示前端与 FastAPI 后端：8 个业务场景、32 条中英文案例，可编辑输入、比较检查方式、查看逐项分数，并运行整套场景回归。
@@ -144,7 +146,29 @@ python -m guardrails_bench report results/<run-directory> --threshold 0.7
 
 ## 真实 Bedrock Guardrails 对比
 
-需要已有 Guardrail ID、版本、Region，以及能调用 `bedrock:ApplyGuardrail` 的标准 AWS 凭据。程序不创建、修改 AWS 资源。
+本次真实对照见 [BEDROCK_COMPARISON.md](BEDROCK_COMPARISON.md)，包含 120 条效果样本、810 次性能请求，以及语言支持和上下文契约的差异。
+
+复现本次对照：
+
+```bash
+pip install -e '.[bedrock]'
+
+# 创建三份独立 Standard 测试配置并冻结版本；配置见 benchmarks/bedrock_policy.json
+python scripts/setup_bedrock_comparison.py \
+  --account YOUR_ACCOUNT_ID --region us-east-1 \
+  --output results/bedrock-comparison
+
+# 同一轮运行 Bedrock、Decider compact、Decider detailed
+python scripts/compare_bedrock.py \
+  --config results/bedrock-comparison/bedrock-guardrails.json \
+  --stage both --requests 30
+
+python scripts/report_bedrock_comparison.py results/bedrock-comparison
+```
+
+setup 脚本会创建测试 Guardrail；评测按实际调用计费。完整效果集保留原始 120 条标签，主比较另列不需要上下文占位、且在共同语言支持范围内的 INPUT 子集。性能矩阵仅测 INPUT，所有模式使用配对的原始文本和填充。
+
+也可调用已有 Guardrail：需要 ID、版本、Region，以及 `bedrock:ApplyGuardrail` 权限。以下 `eval` / `bench` 命令不创建或修改 AWS 资源。
 
 ```bash
 pip install -e '.[bedrock]'
@@ -166,6 +190,8 @@ python -m guardrails_bench bench \
 也支持 `BEDROCK_GUARDRAIL_ID`、`BEDROCK_GUARDRAIL_VERSION`、`AWS_REGION` / `AWS_DEFAULT_REGION`。`DRAFT` 可用于调试，正式可重复比较建议使用固定版本。
 
 Bedrock 对 OUTPUT 使用 `grounding_source` / `query` / `guard_content` 标注。`GUARDRAIL_INTERVENED` 映射为应干预，包含 PII masking，不能等同于“整条回答完全拒绝”。Bedrock 不提供可与 Decider 统一使用的总体概率，因此其结果是固定的 0/1 干预判断，不做概率校准或阈值优化。
+
+单 Guardrail CLI 不会自动补全上下文；如果启用了 contextual grounding，样本需同时提供参考资料、问题和回答，否则 AWS 会返回校验错误。对照脚本使用独立的 grounding-only / relevance-only 固定版本，为缺失的必填角色补中性占位，并在报告中单列这些适配样本。默认测试数据不包含 reference 和 query 同时存在的 OUTPUT；自定义此类数据时需额外配置 `both` 路由。
 
 请为 Bedrock 配置尽可能相同的内容类别、阈值、禁用词、禁用主题、PII 与 grounding/relevance 策略，并记录实际配置。只有数据 SHA256 和策略含义相同的报告才适合比较；仅填写 Guardrail ID 不意味着策略已经自动对齐。真实调用按 AWS 账户计费，本项目不猜测接口价格或 GPU 成本。
 
